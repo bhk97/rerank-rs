@@ -1,11 +1,7 @@
 use anyhow::Result;
-mod model;
-mod reranker;
-mod tokenizer;
-mod traits;
-use crate::traits::{CrossEncoderReranker, Reranker, RerankerConfig};
+use rerank::{CrossEncoderReranker, Reranker, RerankerConfig};
 use tokio;
-mod errors;
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let query = "How many people live in Berlin?";

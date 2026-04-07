@@ -3,6 +3,10 @@ name = "rerank-rs"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+name = "rerank"
+path = "src/lib.rs"
+
 [dependencies]
 anyhow = "1.0.102"
 ndarray = "0.17.2"
