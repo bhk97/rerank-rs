@@ -17,11 +17,6 @@ pub fn tokenise_data(
         ..Default::default()
     }));
 
-    token.with_padding(Some(PaddingParams {
-        strategy: PaddingStrategy::Fixed(max_len),
-        ..Default::default()
-    }));
-
     let mut ids: Vec<Vec<i64>> = Vec::new();
     let mut mask: Vec<Vec<i64>> = Vec::new();
     let mut type_ids: Vec<Vec<i64>> = Vec::new();
@@ -39,6 +34,14 @@ pub fn tokenise_data(
                 .collect(),
         );
         type_ids.push(encoding.get_type_ids().iter().map(|&x| x as i64).collect());
+    }
+    let max_len_batch = ids.iter().map(|v| v.len()).max().unwrap();
+    let max_len_batch = std::cmp::min(max_len_batch, max_len);
+
+    for i in 0..ids.len() {
+        ids[i].resize(max_len_batch, 0);
+        mask[i].resize(max_len_batch, 0);
+        type_ids[i].resize(max_len_batch, 0);
     }
 
     let batch_size = ids.len();
