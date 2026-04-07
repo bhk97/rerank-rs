@@ -1,6 +1,8 @@
 use crate::errors::RerankerError;
 use anyhow::Result;
-
+use ort::session::Session;
+use std::sync::{Arc, Mutex};
+use tokenizers::Tokenizer;
 pub trait Reranker {
     async fn rerank(
         &self,
@@ -23,5 +25,11 @@ pub struct RerankerConfig {
 }
 
 pub struct CrossEncoderReranker {
-    pub config: RerankerConfig,
+    pub model: Arc<Mutex<Session>>,
+    pub tokenizer: Tokenizer,
+}
+
+pub struct ModelAndTokenizer {
+    pub model: Session,
+    pub tokenizer: tokenizers::Tokenizer,
 }

@@ -2,39 +2,58 @@ use crate::errors::RerankerError;
 use anyhow::{Result, anyhow};
 use ndarray::Array2;
 use ort::value::{TensorValueType, Value};
+use std::time::Instant;
 use tokenizers::{PaddingParams, PaddingStrategy, Tokenizer, TruncationParams};
 
 pub fn tokenise_data(
     query: &str,
     docs: Vec<&str>,
-    json_path: &str,
+    tokenizer: &Tokenizer,
 ) -> Result<Vec<Value<TensorValueType<i64>>>, RerankerError> {
-    let mut token = Tokenizer::from_file(json_path).map_err(RerankerError::Tokenizer)?;
+    let mut token = tokenizer;
+
     let max_len = 256;
 
-    token.with_truncation(Some(TruncationParams {
-        max_length: max_len,
-        ..Default::default()
-    }));
+    // token.with_truncation(Some(TruncationParams {
+    //     max_length: max_len,
+    //     ..Default::default()
+    // }));
 
     let mut ids: Vec<Vec<i64>> = Vec::new();
     let mut mask: Vec<Vec<i64>> = Vec::new();
     let mut type_ids: Vec<Vec<i64>> = Vec::new();
 
-    for d in docs {
-        let encoding = token
-            .encode((query, d), true)
-            .map_err(RerankerError::Tokenizer)?;
-        ids.push(encoding.get_ids().iter().map(|&x| x as i64).collect());
-        mask.push(
-            encoding
-                .get_attention_mask()
-                .iter()
-                .map(|&x| x as i64)
-                .collect(),
-        );
-        type_ids.push(encoding.get_type_ids().iter().map(|&x| x as i64).collect());
-    }
+    let pairs = docs.iter().map(|d| (query, *d)).collect();
+    let encodings = token
+        .encode_batch(pairs, true)
+        .map_err(RerankerError::Tokenizer)?;
+    ids = encodings
+        .iter()
+        .map(|e| e.get_ids().iter().map(|&x| x as i64).collect())
+        .collect();
+    mask = encodings
+        .iter()
+        .map(|e| e.get_attention_mask().iter().map(|&x| x as i64).collect())
+        .collect();
+    type_ids = encodings
+        .iter()
+        .map(|e| e.get_type_ids().iter().map(|&x| x as i64).collect())
+        .collect();
+
+    // for d in docs {
+    //     let encoding = token
+    //         .encode((query, d), true)
+    //         .map_err(RerankerError::Tokenizer)?;
+    //     ids.push(encoding.get_ids().iter().map(|&x| x as i64).collect());
+    //     mask.push(
+    //         encoding
+    //             .get_attention_mask()
+    //             .iter()
+    //             .map(|&x| x as i64)
+    //             .collect(),
+    //     );
+    //     type_ids.push(encoding.get_type_ids().iter().map(|&x| x as i64).collect());
+    // }
     let max_len_batch = ids.iter().map(|v| v.len()).max().unwrap();
     let max_len_batch = std::cmp::min(max_len_batch, max_len);
 
