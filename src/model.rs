@@ -1,7 +1,7 @@
 use anyhow::{Result, anyhow};
 use ort::session::{Session, builder::GraphOptimizationLevel};
 
-pub fn load_model() -> Result<Session> {
+pub fn load_model(path: &str) -> Result<Session> {
     let mut builder = Session::builder().map_err(|e| anyhow!("{:?}", e))?;
 
     builder = builder
@@ -12,8 +12,8 @@ pub fn load_model() -> Result<Session> {
         .with_intra_threads(4)
         .map_err(|e| anyhow!("{:?}", e))?;
 
-    let mut model = builder
-        .commit_from_file("models/model.onnx")
+    let model = builder
+        .commit_from_file(path)
         .map_err(|e| anyhow!("{:?}", e))?;
     Ok(model)
 }

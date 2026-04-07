@@ -3,8 +3,12 @@ use ndarray::Array2;
 use ort::value::{TensorValueType, Value};
 use tokenizers::{PaddingParams, PaddingStrategy, Tokenizer, TruncationParams};
 
-pub fn tokenise_data(query: &str, docs: Vec<&str>) -> Result<Vec<Value<TensorValueType<i64>>>> {
-    let mut token = Tokenizer::from_file("json/tokenizer.json").map_err(|e| anyhow!(e))?;
+pub fn tokenise_data(
+    query: &str,
+    docs: Vec<&str>,
+    json_path: &str,
+) -> Result<Vec<Value<TensorValueType<i64>>>> {
+    let mut token = Tokenizer::from_file(json_path).map_err(|e| anyhow!(e))?;
     let max_len = 256;
 
     token.with_truncation(Some(TruncationParams {

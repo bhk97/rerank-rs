@@ -1,11 +1,35 @@
 use crate::model;
 use crate::tokenizer;
+use crate::traits::RerankerConfig;
+use crate::traits::{CrossEncoderReranker, RankedDocument, Reranker};
 use anyhow::Result;
-use ort::value::Value;
 
-pub fn rerank(query: &str, docs: Vec<&str>) -> Result<Vec<String>> {
-    let mut model = model::load_model()?;
-    let tokenised_values = tokenizer::tokenise_data(query, docs.clone())?;
+impl CrossEncoderReranker {
+    pub fn new(config: RerankerConfig) -> Self {
+        Self { config }
+    }
+}
+impl Reranker for CrossEncoderReranker {
+    async fn rerank(
+        &self,
+        query: &str,
+        documents: Vec<&str>,
+        top_n: usize,
+    ) -> Result<Vec<RankedDocument>> {
+        rerank_logic(self, query, documents, top_n)
+    }
+}
+
+pub fn rerank_logic(
+    reranker: &CrossEncoderReranker,
+    query: &str,
+    docs: Vec<&str>,
+    top_n: usize,
+) -> Result<Vec<RankedDocument>> {
+    let model_path = &reranker.config.model_path;
+    let json_path = &reranker.config.tokenizer_path;
+    let mut model = model::load_model(model_path)?;
+    let tokenised_values = tokenizer::tokenise_data(query, docs.clone(), json_path)?;
 
     let [input_ids, attention_mask, token_type_ids] = &tokenised_values[..] else {
         panic!(
@@ -22,18 +46,20 @@ pub fn rerank(query: &str, docs: Vec<&str>) -> Result<Vec<String>> {
 
     let logits = outputs["logits"].try_extract_array::<f32>()?;
     let scores: Vec<f32> = logits.iter().cloned().collect();
+    let mut res: Vec<RankedDocument> = vec![];
+    for (index, (doc, score)) in docs.iter().zip(scores.iter()).enumerate() {
+        res.push(RankedDocument {
+            index,
+            text: doc.to_string(),
+            score: *score,
+        });
+    }
 
-    let mut ranked_results: Vec<(String, f32)> = docs
-        .into_iter()
-        .zip(scores.into_iter())
-        .map(|(doc, score)| (doc.to_string(), score))
-        .collect();
-
-    ranked_results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
-
-    let sorted_docs: Vec<String> = ranked_results.into_iter().map(|(doc, _)| doc).collect();
-
-    println!("Top document: {:?}", sorted_docs.first());
-
-    Ok(sorted_docs)
+    res.sort_by(|a, b| {
+        b.score
+            .partial_cmp(&a.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+    res.truncate(top_n);
+    Ok(res)
 }

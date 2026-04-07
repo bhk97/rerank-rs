@@ -8,3 +8,4 @@ anyhow = "1.0.102"
 ndarray = "0.17.2"
 ort = "=2.0.0-rc.12"
 tokenizers = "0.22.2"
+tokio = { version = "1", features = ["full"] }
