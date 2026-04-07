@@ -1,9 +1,9 @@
+use crate::errors::RerankerError;
 use crate::model;
 use crate::tokenizer;
 use crate::traits::RerankerConfig;
 use crate::traits::{CrossEncoderReranker, RankedDocument, Reranker};
 use anyhow::Result;
-
 impl CrossEncoderReranker {
     pub fn new(config: RerankerConfig) -> Self {
         Self { config }
@@ -15,7 +15,7 @@ impl Reranker for CrossEncoderReranker {
         query: &str,
         documents: Vec<&str>,
         top_n: usize,
-    ) -> Result<Vec<RankedDocument>> {
+    ) -> Result<Vec<RankedDocument>, RerankerError> {
         rerank_logic(self, query, documents, top_n)
     }
 }
@@ -25,17 +25,15 @@ pub fn rerank_logic(
     query: &str,
     docs: Vec<&str>,
     top_n: usize,
-) -> Result<Vec<RankedDocument>> {
+) -> Result<Vec<RankedDocument>, RerankerError> {
     let model_path = &reranker.config.model_path;
     let json_path = &reranker.config.tokenizer_path;
     let mut model = model::load_model(model_path)?;
-    let tokenised_values = tokenizer::tokenise_data(query, docs.clone(), json_path)?;
+    let tokenised_values = tokenizer::tokenise_data(query, docs.clone(), json_path)
+        .map_err(|_| RerankerError::FileLoad)?;
 
     let [input_ids, attention_mask, token_type_ids] = &tokenised_values[..] else {
-        panic!(
-            "Expected exactly 3 values, but got {}",
-            tokenised_values.len()
-        )
+        return Err(RerankerError::InvalidInput);
     };
 
     let outputs = model.run(ort::inputs![

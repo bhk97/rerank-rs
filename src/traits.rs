@@ -1,3 +1,4 @@
+use crate::errors::RerankerError;
 use anyhow::Result;
 
 pub trait Reranker {
@@ -6,7 +7,7 @@ pub trait Reranker {
         query: &str,
         docs: Vec<&str>,
         top_n: usize,
-    ) -> Result<Vec<RankedDocument>>;
+    ) -> Result<Vec<RankedDocument>, RerankerError>;
 }
 
 #[derive(Debug)]

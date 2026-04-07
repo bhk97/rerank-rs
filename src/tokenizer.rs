@@ -1,3 +1,4 @@
+use crate::errors::RerankerError;
 use anyhow::{Result, anyhow};
 use ndarray::Array2;
 use ort::value::{TensorValueType, Value};
@@ -7,8 +8,8 @@ pub fn tokenise_data(
     query: &str,
     docs: Vec<&str>,
     json_path: &str,
-) -> Result<Vec<Value<TensorValueType<i64>>>> {
-    let mut token = Tokenizer::from_file(json_path).map_err(|e| anyhow!(e))?;
+) -> Result<Vec<Value<TensorValueType<i64>>>, RerankerError> {
+    let mut token = Tokenizer::from_file(json_path).map_err(RerankerError::Tokenizer)?;
     let max_len = 256;
 
     token.with_truncation(Some(TruncationParams {
@@ -26,7 +27,9 @@ pub fn tokenise_data(
     let mut type_ids: Vec<Vec<i64>> = Vec::new();
 
     for d in docs {
-        let encoding = token.encode((query, d), true).map_err(|e| anyhow!(e))?;
+        let encoding = token
+            .encode((query, d), true)
+            .map_err(RerankerError::Tokenizer)?;
         ids.push(encoding.get_ids().iter().map(|&x| x as i64).collect());
         mask.push(
             encoding
@@ -44,9 +47,12 @@ pub fn tokenise_data(
     let flat_mask: Vec<i64> = mask.into_iter().flatten().collect();
     let flat_type_ids: Vec<i64> = type_ids.into_iter().flatten().collect();
 
-    let input_ids: Array2<i64> = Array2::from_shape_vec((batch_size, seq_len), flat_ids)?;
-    let attention_mask: Array2<i64> = Array2::from_shape_vec((batch_size, seq_len), flat_mask)?;
-    let token_type_ids: Array2<i64> = Array2::from_shape_vec((batch_size, seq_len), flat_type_ids)?;
+    let input_ids: Array2<i64> = Array2::from_shape_vec((batch_size, seq_len), flat_ids)
+        .map_err(|_| RerankerError::ShapeError)?;
+    let attention_mask: Array2<i64> = Array2::from_shape_vec((batch_size, seq_len), flat_mask)
+        .map_err(|_| RerankerError::ShapeError)?;
+    let token_type_ids: Array2<i64> = Array2::from_shape_vec((batch_size, seq_len), flat_type_ids)
+        .map_err(|_| RerankerError::ShapeError)?;
 
     let input_ids = Value::from_array(input_ids)?;
     let attention_mask = Value::from_array(attention_mask)?;

@@ -969,6 +969,7 @@ dependencies = [
  "anyhow",
  "ndarray",
  "ort",
+ "thiserror",
  "tokenizers",
  "tokio",
 ]

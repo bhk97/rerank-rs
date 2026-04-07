@@ -1,13 +1,22 @@
 use thiserror::Error;
-//we need to remove the anyhow and use this errors in phase 2 or 3
-#[derive(Error, Debug)]
+
+#[derive(Debug, Error)]
 pub enum RerankerError {
-    #[error("Model loading failed: {0}")]
-    ModelError(#[from] ort::OrtError),
-    #[error("Tokenizer error: {0}")]
-    TokenizerError(#[from] tokenizers::Error),
-    #[error("Input error: {0}")]
-    InputError(#[from] anyhow::Error),
-    #[error("Output error: {0}")]
-    OutputError(#[from] anyhow::Error),
+    #[error("Failed to Load Model")]
+    ModelLoad,
+
+    #[error("Failed to Load Tokenizer")]
+    FileLoad,
+
+    #[error("Problem with your model file")]
+    Onnx(#[from] ort::error::Error),
+
+    #[error("Error in tokenizer calculation")]
+    Tokenizer(#[from] Box<dyn std::error::Error + Send + Sync>),
+
+    #[error("Invalid input")]
+    InvalidInput,
+
+    #[error("Shape Error In Predicting Scores")]
+    ShapeError,
 }
