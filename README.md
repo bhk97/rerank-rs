@@ -20,7 +20,7 @@ json/tokenizer.json
 ## Example
 
 ```rust
-use rerank_rs::{CrossEncoderReranker, RerankerConfig, Result};
+use rerank::{CrossEncoderReranker, Reranker, RerankerConfig};
 
 #[tokio::main]
 async fn main() -> Result<()> {
