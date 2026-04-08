@@ -53,6 +53,62 @@ async fn main() -> Result<()> {
 * Requires an async runtime such as Tokio.
 * Paths must point to valid ONNX model and tokenizer files.
 * `top_k` in `rerank` controls how many results are returned.
+* Loading of model and tokenizer file will consume more time, for comparision
+of latency please run the following:
+
+```rust
+cargo run --example cli
+
+```
+
+=== Reranker CLI Example ===
+Commands:
+query  -> set query
+doc    -> add document
+done   -> run reranker
+exit   -> quit
+
+# How to run the example
+
+1. Set the Query:
+
+```
+query
+```
+
+2. Enter the query:
+
+```
+How many people live in Berlin?
+```
+
+3. Add the documents:
+
+```
+doc
+```
+
+4. Enter the documents:
+
+```
+Berlin had a population of 3,520,031 registered inhabitants in an area of 891.82 square kilometers.
+Berlin is well known for its museums.
+Berlin Population increased vey much
+Berlin Population is 3M.
+```
+
+**Note All Documents cannot be added together, you need to run the doc for each individual document**
+5. Run the reranker:
+
+```
+done
+```
+
+4. Exit:
+
+```
+exit
+```
 
 ## Output
 
