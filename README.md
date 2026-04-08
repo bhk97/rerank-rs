@@ -62,10 +62,15 @@ cargo run --example cli
 ```
 
 === Reranker CLI Example ===
+
 Commands:
+
 query  -> set query
+
 doc    -> add document
+
 done   -> run reranker
+
 exit   -> quit
 
 # How to run the example
@@ -98,13 +103,14 @@ Berlin Population is 3M.
 ```
 
 **Note All Documents cannot be added together, you need to run the doc for each individual document**
+
 5. Run the reranker:
 
 ```
 done
 ```
 
-4. Exit:
+6. Exit:
 
 ```
 exit
