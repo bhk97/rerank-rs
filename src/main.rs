@@ -9,8 +9,9 @@ async fn main() -> Result<()> {
     let start_time = Instant::now();
     let query = "How many people live in Berlin?";
     let docs = vec![
-        "Berlin had a population of 3,520,031 registered inhabitants in an area of 891.82 square kilometers.",
         "Berlin is well known for its museums.",
+        "A large metropolitan city had a population of 4123456 registered residents 
+       ",
         "Berlin Population increased vey much",
         "Berlin Population is 3M.",
     ];

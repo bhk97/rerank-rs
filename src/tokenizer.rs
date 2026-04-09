@@ -1,84 +1,154 @@
-use crate::errors::RerankerError;
-use anyhow::{Result, anyhow};
+use std::time::Instant;
+
+use crate::{
+    errors::RerankerError,
+    traits::{TokenizerResult, WindowedPair},
+};
 use ndarray::Array2;
 use ort::value::{TensorValueType, Value};
-use std::time::Instant;
-use tokenizers::{PaddingParams, PaddingStrategy, Tokenizer, TruncationParams};
+use tokenizers::Tokenizer;
+
+const CLS_TOKEN: i64 = 101;
+const SEP_TOKEN: i64 = 102;
+const PAD_TOKEN: i64 = 0;
+const MAX_SEQ_LEN: usize = 512;
 
 pub fn tokenise_data(
     query: &str,
     docs: Vec<&str>,
     tokenizer: &Tokenizer,
-) -> Result<Vec<Value<TensorValueType<i64>>>, RerankerError> {
-    let mut token = tokenizer;
-
-    let max_len = 256;
-
-    // token.with_truncation(Some(TruncationParams {
-    //     max_length: max_len,
-    //     ..Default::default()
-    // }));
-
-    let mut ids: Vec<Vec<i64>> = Vec::new();
-    let mut mask: Vec<Vec<i64>> = Vec::new();
-    let mut type_ids: Vec<Vec<i64>> = Vec::new();
-
-    let pairs = docs.iter().map(|d| (query, *d)).collect();
-    let encodings = token
-        .encode_batch(pairs, true)
+) -> Result<TokenizerResult, RerankerError> {
+    let query_encoding = tokenizer
+        .encode(query, false)
         .map_err(RerankerError::Tokenizer)?;
-    ids = encodings
-        .iter()
-        .map(|e| e.get_ids().iter().map(|&x| x as i64).collect())
-        .collect();
-    mask = encodings
-        .iter()
-        .map(|e| e.get_attention_mask().iter().map(|&x| x as i64).collect())
-        .collect();
-    type_ids = encodings
-        .iter()
-        .map(|e| e.get_type_ids().iter().map(|&x| x as i64).collect())
-        .collect();
+    let query_ids: Vec<i64> = query_encoding.get_ids().iter().map(|&x| x as i64).collect();
+    let max_doc_tokens = MAX_SEQ_LEN - 3 - query_ids.len();
 
-    // for d in docs {
-    //     let encoding = token
-    //         .encode((query, d), true)
-    //         .map_err(RerankerError::Tokenizer)?;
-    //     ids.push(encoding.get_ids().iter().map(|&x| x as i64).collect());
-    //     mask.push(
-    //         encoding
-    //             .get_attention_mask()
-    //             .iter()
-    //             .map(|&x| x as i64)
-    //             .collect(),
-    //     );
-    //     type_ids.push(encoding.get_type_ids().iter().map(|&x| x as i64).collect());
-    // }
-    let max_len_batch = ids.iter().map(|v| v.len()).max().unwrap();
-    let max_len_batch = std::cmp::min(max_len_batch, max_len);
+    let mut all_windows: Vec<WindowedPair> = Vec::new();
 
-    for i in 0..ids.len() {
-        ids[i].resize(max_len_batch, 0);
-        mask[i].resize(max_len_batch, 0);
-        type_ids[i].resize(max_len_batch, 0);
+    for (doc_idx, doc) in docs.iter().enumerate() {
+        let doc_encoding = tokenizer
+            .encode(*doc, false)
+            .map_err(RerankerError::Tokenizer)?;
+        let doc_ids: Vec<i64> = doc_encoding.get_ids().iter().map(|&x| x as i64).collect();
+
+        let windows = chunk_doc_ids(&doc_ids, max_doc_tokens, 64);
+
+        for (win_idx, window_doc_ids) in windows.iter().enumerate() {
+            let (token_ids, attention_mask, type_ids) = build_tensors(&query_ids, window_doc_ids);
+
+            let window_token_ids_u32: Vec<u32> = window_doc_ids.iter().map(|&x| x as u32).collect();
+            let window_text = tokenizer
+                .decode(&window_token_ids_u32, true)
+                .unwrap_or_else(|_| doc.to_string());
+
+            all_windows.push(WindowedPair {
+                query_doc_pair: (query.to_string(), window_text),
+                doc_index: doc_idx,
+                window_index: win_idx,
+                token_ids,
+                attention_mask,
+                type_ids,
+            });
+        }
     }
 
-    let batch_size = ids.len();
-    let seq_len = ids[0].len();
-    let flat_ids: Vec<i64> = ids.into_iter().flatten().collect();
-    let flat_mask: Vec<i64> = mask.into_iter().flatten().collect();
-    let flat_type_ids: Vec<i64> = type_ids.into_iter().flatten().collect();
+    let max_len = all_windows
+        .iter()
+        .map(|w| w.token_ids.len())
+        .max()
+        .unwrap_or(0);
 
-    let input_ids: Array2<i64> = Array2::from_shape_vec((batch_size, seq_len), flat_ids)
+    let max_len = max_len.min(MAX_SEQ_LEN);
+
+    let batch_size = all_windows.len();
+
+    let mut flat_ids: Vec<i64> = Vec::with_capacity(batch_size * max_len);
+    let mut flat_mask: Vec<i64> = Vec::with_capacity(batch_size * max_len);
+    let mut flat_type_ids: Vec<i64> = Vec::with_capacity(batch_size * max_len);
+
+    for window in &all_windows {
+        let pad_len = max_len - window.token_ids.len();
+
+        flat_ids.extend_from_slice(&window.token_ids);
+        flat_ids.extend(std::iter::repeat(PAD_TOKEN).take(pad_len));
+
+        flat_mask.extend_from_slice(&window.attention_mask);
+        flat_mask.extend(std::iter::repeat(0i64).take(pad_len));
+
+        flat_type_ids.extend_from_slice(&window.type_ids);
+        flat_type_ids.extend(std::iter::repeat(0i64).take(pad_len));
+    }
+
+    let input_ids = Array2::from_shape_vec((batch_size, max_len), flat_ids)
         .map_err(|_| RerankerError::ShapeError)?;
-    let attention_mask: Array2<i64> = Array2::from_shape_vec((batch_size, seq_len), flat_mask)
+    let attention_mask = Array2::from_shape_vec((batch_size, max_len), flat_mask)
         .map_err(|_| RerankerError::ShapeError)?;
-    let token_type_ids: Array2<i64> = Array2::from_shape_vec((batch_size, seq_len), flat_type_ids)
+    let token_type_ids = Array2::from_shape_vec((batch_size, max_len), flat_type_ids)
         .map_err(|_| RerankerError::ShapeError)?;
 
     let input_ids = Value::from_array(input_ids)?;
     let attention_mask = Value::from_array(attention_mask)?;
     let token_type_ids = Value::from_array(token_type_ids)?;
-    let res: Vec<Value<TensorValueType<i64>>> = vec![input_ids, attention_mask, token_type_ids];
-    Ok(res)
+    Ok(TokenizerResult {
+        tensor_values: vec![input_ids, attention_mask, token_type_ids],
+        windowed_pairs: all_windows,
+    })
+}
+
+fn chunk_doc_ids(doc_ids: &[i64], window_size: usize, overlap: usize) -> Vec<Vec<i64>> {
+    if doc_ids.len() <= window_size {
+        return vec![doc_ids.to_vec()];
+    }
+
+    let mut windows: Vec<Vec<i64>> = Vec::new();
+    let step = window_size - overlap;
+    let mut start = 0;
+
+    while start < doc_ids.len() {
+        let end = (start + window_size).min(doc_ids.len());
+        windows.push(doc_ids[start..end].to_vec());
+        if end == doc_ids.len() {
+            break;
+        }
+        start += step;
+    }
+
+    windows
+}
+
+fn build_tensors(query_ids: &[i64], doc_window_ids: &[i64]) -> (Vec<i64>, Vec<i64>, Vec<i64>) {
+    let total_len = 1 + query_ids.len() + 1 + doc_window_ids.len() + 1;
+
+    let mut token_ids = Vec::with_capacity(total_len);
+    let mut type_ids = Vec::with_capacity(total_len);
+
+    // [CLS]
+    token_ids.push(CLS_TOKEN);
+    type_ids.push(0i64);
+
+    // query tokens — type 0
+    for &id in query_ids {
+        token_ids.push(id);
+        type_ids.push(0i64);
+    }
+
+    // [SEP] after query — type 0
+    token_ids.push(SEP_TOKEN);
+    type_ids.push(0i64);
+
+    // doc window tokens — type 1
+    for &id in doc_window_ids {
+        token_ids.push(id);
+        type_ids.push(1i64);
+    }
+
+    // [SEP] after doc — type 1
+    token_ids.push(SEP_TOKEN);
+    type_ids.push(1i64);
+
+    // attention mask — 1 for every real token, no padding here
+    let attention_mask = vec![1i64; token_ids.len()];
+
+    (token_ids, attention_mask, type_ids)
 }

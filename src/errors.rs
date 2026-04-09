@@ -13,7 +13,7 @@ pub enum RerankerError {
 
     #[error("Error in tokenizer calculation")]
     Tokenizer(#[from] Box<dyn std::error::Error + Send + Sync>),
-
+    /// Invalid Input Error
     #[error("Invalid input")]
     InvalidInput,
 
