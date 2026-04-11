@@ -45,8 +45,13 @@ pub struct WindowedPair {
     pub type_ids: Vec<i64>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TokenizerResult {
     pub tensor_values: Vec<Value<TensorValueType<i64>>>,
     pub windowed_pairs: Vec<WindowedPair>,
+}
+
+#[derive(Debug, Clone)]
+pub struct BucketResult {
+    pub res: Vec<TokenizerResult>,
 }

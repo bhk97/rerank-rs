@@ -10,7 +10,24 @@ async fn main() -> Result<()> {
     let query = "How many people live in Berlin?";
     let docs = vec![
         "Berlin is well known for its museums.",
-        "A large metropolitan city had a population of 4123456 registered residents 
+        "A large metropolitan city had a population of 4123456 registered residents
+         Reranking is a critical stage in contemporary information retrieval (IR) systems, 
+         improving the relevance of the user-presented final results by honing initial candidate sets. 
+         This paper is a thorough guide to examine the changing reranker landscape and offer a clear 
+         view of the advancements made in reranking methods. We present a comprehensive survey of 
+         reranking models employed in IR, particularly within modern Retrieval Augmented Generation 
+         (RAG) pipelines, where retrieved documents notably influence output quality.
+         We embark on a chronological journey through the historical trajectory of reranking techniques,
+          starting with foundational approaches, before exploring the wide range of sophisticated neural 
+          network architectures such as cross-encoders, sequence-generation models like T5, and Graph Neural
+           Networks (GNNs) utilized for structural information. Recognizing the computational cost of 
+           advancing neural rerankers, we analyze techniques for enhancing efficiency, notably knowledge 
+           distillation for creating competitive, lighter alternatives. Furthermore, we map the emerging 
+           territory of integrating Large Language Models (LLMs) in reranking, examining novel prompting
+            strategies and fine-tuning tactics. This survey seeks to elucidate the fundamental ideas, 
+            relative effectiveness, computational features, and real-world trade-offs of various reranking 
+            strategies. The survey provides a structured synthesis of the diverse reranking paradigms, 
+            highlighting their underlying 
        ",
         "Berlin Population increased vey much",
         "Berlin Population is 3M.",
@@ -27,47 +44,3 @@ async fn main() -> Result<()> {
     println!("Time taken: {:?}", duration);
     Ok(())
 }
-
-//  let reranker = CrossEncoderReranker::new(config).unwrap();
-//     let mut query = String::new();
-//     let mut docs: Vec<String> = Vec::new();
-
-//     loop {
-//         let mut input = String::new();
-//         io::stdin().read_line(&mut input).unwrap();
-//         let input = input.trim();
-
-//         match input {
-//             "query" => {
-//                 query.clear();
-//                 io::stdin().read_line(&mut query).unwrap();
-//                 query = query.trim().to_string();
-//             }
-
-//             "doc" => {
-//                 let mut doc = String::new();
-//                 io::stdin().read_line(&mut doc).unwrap();
-//                 docs.push(doc.trim().to_string());
-//             }
-
-//             "done" => {
-//                 if query.is_empty() || docs.is_empty() {
-//                     println!("Query or docs missing.");
-//                     continue;
-//                 }
-
-//                 let doc_refs: Vec<&str> = docs.iter().map(|s| s.as_str()).collect();
-//                 let start_time = Instant::now();
-//                 let res = reranker.rerank(&query, doc_refs, 1).await.unwrap();
-//                 println!("{:?}", res);
-//                 let duration = start_time.elapsed();
-//                 println!("Time taken: {:?}", duration);
-//                 query.clear();
-//                 docs.clear();
-//             }
-
-//             "exit" => break,
-
-//             _ => println!("Invalid command"),
-//         }
-//     }
