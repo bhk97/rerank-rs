@@ -55,8 +55,7 @@ pub fn tokenise_data(
 
     all_windows.sort_by(|a, b| a.token_ids.len().cmp(&b.token_ids.len()));
     let buckets = build_buckets(all_windows);
-    // let ans = build_inputs(buckets[0].clone());
-    // ans
+
     let mut tensor_values: Vec<TokenizerResult> = Vec::new();
     for bucket in buckets.iter() {
         if bucket.len() == 0 {

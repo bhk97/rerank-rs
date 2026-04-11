@@ -30,11 +30,6 @@ pub struct CrossEncoderReranker {
     pub tokenizer: Tokenizer,
 }
 
-// pub struct ModelAndTokenizer {
-//     pub model: Session,
-//     pub tokenizer: tokenizers::Tokenizer,
-// }
-
 #[derive(Debug, Clone)]
 pub struct WindowedPair {
     pub query_doc_pair: (String, String),
