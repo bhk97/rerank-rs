@@ -3,8 +3,9 @@ use crate::model;
 use crate::tokenizer;
 use crate::traits::RerankerConfig;
 use crate::traits::{CrossEncoderReranker, RankedDocument, Reranker};
-
 use anyhow::Result;
+use ort::session::Session;
+use ort::value::{TensorValueType, Value};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tokenizers::Tokenizer;
@@ -38,26 +39,34 @@ pub fn rerank_logic(
 ) -> Result<Vec<RankedDocument>, RerankerError> {
     let tokenised_values = tokenizer::tokenise_data(query, docs.clone(), &reranker.tokenizer)
         .map_err(|_| RerankerError::FileLoad)?;
-    let [input_ids, attention_mask, token_type_ids] = &tokenised_values.tensor_values[..] else {
-        return Err(RerankerError::InvalidInput);
-    };
+    let s = Instant::now();
     let mut model = reranker.model.lock().unwrap();
-    let outputs = model.run(ort::inputs![
-        "input_ids" => input_ids,
-        "attention_mask" => attention_mask,
-        "token_type_ids" => token_type_ids
-    ])?;
+    let mut combined_scores: Vec<f32> = vec![];
 
-    let logits = outputs["logits"].try_extract_array::<f32>()?;
-    let scores: Vec<f32> = logits.iter().cloned().collect();
-    let windows_pairs = tokenised_values.windowed_pairs;
+    let mut windows_pairs = vec![];
+    for bucket in tokenised_values.res {
+        let [input_ids, attention_mask, token_type_ids] = &bucket.tensor_values[..] else {
+            print!("Error in Value Extracting");
+            return Err(RerankerError::InvalidInput);
+        };
+
+        println!("INP IDS GENERATED");
+
+        windows_pairs.extend(bucket.windowed_pairs);
+        let scores = return_scores(&mut model, input_ids, attention_mask, token_type_ids)?;
+        println!("SCORE: {:?}", scores);
+        combined_scores.extend(scores);
+    }
+    let e = s.elapsed();
+    println!("Model inference time: {:?}", e);
+
     let mut aggregated_score: Vec<f32> = vec![f32::MIN; docs.len()];
     for (idx, window) in windows_pairs.iter().enumerate() {
         if aggregated_score[window.doc_index] == f32::MIN {
-            aggregated_score[window.doc_index] = scores[idx];
+            aggregated_score[window.doc_index] = combined_scores[idx];
         } else {
             aggregated_score[window.doc_index] =
-                aggregated_score[window.doc_index].max(scores[idx]);
+                aggregated_score[window.doc_index].max(combined_scores[idx]);
         }
     }
     let mut res: Vec<RankedDocument> = vec![];
@@ -76,4 +85,20 @@ pub fn rerank_logic(
     });
     res.truncate(top_n);
     Ok(res)
+}
+
+pub fn return_scores(
+    model: &mut Session,
+    input_ids: &Value<TensorValueType<i64>>,
+    attention_mask: &Value<TensorValueType<i64>>,
+    token_type_ids: &Value<TensorValueType<i64>>,
+) -> Result<Vec<f32>, RerankerError> {
+    let outputs = model.run(ort::inputs![
+        "input_ids" => input_ids,
+        "attention_mask" => attention_mask,
+        "token_type_ids" => token_type_ids
+    ])?;
+    let logits = outputs["logits"].try_extract_array::<f32>()?;
+    let scores: Vec<f32> = logits.iter().cloned().collect();
+    Ok(scores)
 }

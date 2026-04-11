@@ -30,11 +30,6 @@ pub struct CrossEncoderReranker {
     pub tokenizer: Tokenizer,
 }
 
-// pub struct ModelAndTokenizer {
-//     pub model: Session,
-//     pub tokenizer: tokenizers::Tokenizer,
-// }
-
 #[derive(Debug, Clone)]
 pub struct WindowedPair {
     pub query_doc_pair: (String, String),
@@ -45,8 +40,13 @@ pub struct WindowedPair {
     pub type_ids: Vec<i64>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TokenizerResult {
     pub tensor_values: Vec<Value<TensorValueType<i64>>>,
     pub windowed_pairs: Vec<WindowedPair>,
+}
+
+#[derive(Debug, Clone)]
+pub struct BucketResult {
+    pub res: Vec<TokenizerResult>,
 }
