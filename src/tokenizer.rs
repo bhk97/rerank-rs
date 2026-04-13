@@ -18,8 +18,9 @@ pub(crate) fn tokenise_data(
     docs: Vec<&str>,
     tokenizer: &Tokenizer,
 ) -> Result<BucketResult, RerankerError> {
+    let safe_query = sanitize_query(query);
     let query_encoding = tokenizer
-        .encode(query, false)
+        .encode(safe_query.clone(), false)
         .map_err(RerankerError::Tokenizer)?;
     let query_ids: Vec<i64> = query_encoding.get_ids().iter().map(|&x| x as i64).collect();
     let max_doc_tokens = MAX_SEQ_LEN - 3 - query_ids.len();
@@ -43,7 +44,7 @@ pub(crate) fn tokenise_data(
                 .unwrap_or_else(|_| doc.to_string());
 
             all_windows.push(WindowedPair {
-                query_doc_pair: (query.to_string(), window_text),
+                query_doc_pair: (safe_query.to_string(), window_text),
                 doc_index: doc_idx,
                 window_index: win_idx,
                 token_ids,
@@ -183,4 +184,15 @@ fn build_buckets(all_windows: Vec<WindowedPair>) -> Vec<Vec<WindowedPair>> {
         }
     }
     buckets
+}
+
+fn sanitize_query(query: &str) -> String {
+    query
+        .chars()
+        .map(|c| match c {
+            '+' | '-' | '(' | ')' | '"' | '~' | '*' | '?' | ':' | '\\' | '/' | '[' | ']' | '{'
+            | '}' | '^' | '!' => ' ',
+            _ => c,
+        })
+        .collect()
 }
