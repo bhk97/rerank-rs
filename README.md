@@ -6,10 +6,13 @@ Local cross-encoder reranking for Rust. No API calls, no Python sidecar.
 
 Clone the repository:
 git clone https://github.com/bhk97/rerank-rs.git
+
 cd rerank-rs
 
 Ensure your project has access to the required model and tokenizer files:
+
 models/model.onnx
+
 json/tokenizer.json
 
 Download from HuggingFace: https://huggingface.co/cross-encoder/ms-marco-MiniLM-L6-v2/tree/main/onnx
@@ -58,6 +61,7 @@ async fn main() -> Result<()> {
 - `top_k` controls how many results are returned.
 - Model and tokenizer are loaded once at initialization. First call carries the loading cost — subsequent calls do not.
 - To isolate reranking latency from loading latency, run the included CLI example:
+  
 cargo run --example cli
 
 ## CLI Example
