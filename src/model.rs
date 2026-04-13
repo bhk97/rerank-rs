@@ -1,6 +1,6 @@
 use crate::errors::RerankerError;
-use anyhow::{Result, anyhow};
-use ort::session::{Session, builder::GraphOptimizationLevel};
+use anyhow::Result;
+use ort::session::{builder::GraphOptimizationLevel, Session};
 pub(crate) fn load_model(path: &str) -> Result<Session, RerankerError> {
     let mut builder = Session::builder().map_err(|_| RerankerError::ModelLoad)?;
 

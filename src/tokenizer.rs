@@ -1,11 +1,9 @@
-use std::{clone, time::Instant};
-
 use crate::{
     errors::RerankerError,
     traits::{BucketResult, TokenizerResult, WindowedPair},
 };
 use ndarray::Array2;
-use ort::value::{TensorValueType, Value};
+use ort::value::Value;
 use tokenizers::Tokenizer;
 
 const CLS_TOKEN: i64 = 101;

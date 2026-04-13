@@ -1,5 +1,5 @@
 use rerank::{CrossEncoderReranker, Reranker, RerankerConfig};
-use tokio::test;
+
 #[tokio::test]
 async fn test_top_n() {
     let reranker = CrossEncoderReranker::new(RerankerConfig {

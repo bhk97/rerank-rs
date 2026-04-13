@@ -40,8 +40,10 @@ pub struct CrossEncoderReranker {
 
 #[derive(Debug, Clone)]
 pub struct WindowedPair {
+    #[allow(dead_code)]
     pub query_doc_pair: (String, String),
     pub doc_index: usize,
+    #[allow(dead_code)]
     pub window_index: usize,
     pub token_ids: Vec<i64>,
     pub attention_mask: Vec<i64>,

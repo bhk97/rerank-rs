@@ -1,5 +1,4 @@
 use rerank::{CrossEncoderReranker, Reranker, RerankerConfig};
-use tokio::test;
 
 #[tokio::test]
 async fn test_ranking_order() {

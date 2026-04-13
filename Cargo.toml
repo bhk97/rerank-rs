@@ -7,7 +7,7 @@ repository = "https://github.com/yourname/rerank-rs"
 keywords = ["reranking", "search", "nlp", "onnx", "retrieval"]
 categories = ["science", "text-processing"]
 readme = "README.md"
-edition = "2024"
+edition = "2021"
 
 [lib]
 name = "rerank"

@@ -1,9 +1,6 @@
-use std::time::Instant;
-
 use anyhow::Result;
-use rerank::{CrossEncoderReranker, RankedDocument, Reranker, RerankerConfig};
-use tantivy::Index;
-use tokio;
+use rerank::{CrossEncoderReranker, Reranker, RerankerConfig};
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let query = "How many people live in Berlin?";
