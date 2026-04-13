@@ -13,7 +13,7 @@ const SEP_TOKEN: i64 = 102;
 const PAD_TOKEN: i64 = 0;
 const MAX_SEQ_LEN: usize = 512;
 
-pub fn tokenise_data(
+pub(crate) fn tokenise_data(
     query: &str,
     docs: Vec<&str>,
     tokenizer: &Tokenizer,

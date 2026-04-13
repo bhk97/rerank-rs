@@ -1,6 +1,12 @@
 [package]
 name = "rerank-rs"
 version = "0.1.0"
+description = "Local cross-encoder reranking library for Rust. Zero Python, zero API calls."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/yourname/rerank-rs"
+keywords = ["reranking", "search", "nlp", "onnx", "retrieval"]
+categories = ["science", "text-processing"]
+readme = "README.md"
 edition = "2024"
 
 [lib]

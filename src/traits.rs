@@ -12,20 +12,28 @@ pub trait Reranker {
         top_n: usize,
     ) -> Result<Vec<RankedDocument>, RerankerError>;
 }
-
+/// Struct to hold the ranked documents
 #[derive(Debug)]
 pub struct RankedDocument {
+    /// Index of the document in the original list
     pub index: usize,
+    /// Text of the document
     pub text: String,
+    /// Score of the document
     pub score: f32,
 }
 
+/// Struct to hold the reranker configuration
 pub struct RerankerConfig {
+    /// Path to the model file
     pub model_path: String,
+    /// Path to the tokenizer file
     pub tokenizer_path: String,
 }
 
+/// Struct to hold the cross encoder reranker
 pub struct CrossEncoderReranker {
+    /// Model and tokenizer
     pub model: Arc<Mutex<Session>>,
     pub tokenizer: Tokenizer,
 }

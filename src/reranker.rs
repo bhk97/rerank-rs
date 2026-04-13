@@ -21,6 +21,7 @@ impl CrossEncoderReranker {
 }
 
 impl Reranker for CrossEncoderReranker {
+    /// Rerank the documents based on the query
     async fn rerank(
         &self,
         query: &str,
@@ -31,7 +32,7 @@ impl Reranker for CrossEncoderReranker {
     }
 }
 
-pub fn rerank_logic(
+pub(crate) fn rerank_logic(
     reranker: &CrossEncoderReranker,
     query: &str,
     docs: Vec<&str>,
