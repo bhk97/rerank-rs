@@ -3,3 +3,5 @@ temp.py
 json/
 models/
 tests/fixture
+scifact_dataset/*
+benches/scifact/*

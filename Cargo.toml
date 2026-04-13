@@ -13,8 +13,10 @@ edition = "2024"
 name = "rerank"
 path = "src/lib.rs"
 
+
 [dependencies]
 anyhow = "1.0.102"
+criterion = "0.8.2"
 ndarray = "0.17.2"
 num_cpus = "1.17.0"
 ort = "=2.0.0-rc.12"
@@ -25,4 +27,3 @@ tantivy = "0.26.0"
 thiserror = "2.0.18"
 tokenizers = "0.22.2"
 tokio = { version = "1", features = ["full"] }
-
