@@ -41,7 +41,10 @@ pub(crate) fn rerank_logic(
     let tokenised_values = tokenizer::tokenise_data(query, docs.clone(), &reranker.tokenizer)
         .map_err(|_| RerankerError::FileLoad)?;
     let s = Instant::now();
-    let mut model = reranker.model.lock().unwrap();
+    let mut model = reranker
+        .model
+        .lock()
+        .map_err(|_| RerankerError::ModelLoad)?;
     let mut combined_scores: Vec<f32> = vec![];
 
     let mut windows_pairs = vec![];

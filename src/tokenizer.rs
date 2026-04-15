@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::{
     errors::RerankerError,
     traits::{BucketResult, TokenizerResult, WindowedPair},
@@ -60,7 +62,14 @@ pub(crate) fn tokenise_data(
         if bucket.len() == 0 {
             continue;
         }
-        tensor_values.push(build_inputs(bucket.clone()).unwrap());
+        let inputs = build_inputs(bucket.clone()).map_err(|_| {
+            RerankerError::BuildingTokensError(format!(
+                "Building Input failed for bucket: {:?} bucket",
+                bucket
+            ))
+        })?;
+
+        tensor_values.push(inputs);
     }
     Ok(BucketResult { res: tensor_values })
 }

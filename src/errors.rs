@@ -24,4 +24,8 @@ pub enum RerankerError {
     /// Shape Error In Predicting Scores
     #[error("Shape Error In Predicting Scores")]
     ShapeError,
+
+    ///Building Tokens error
+    #[error("Building Tokens error")]
+    BuildingTokensError(String),
 }
