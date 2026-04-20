@@ -17,7 +17,7 @@ async fn main() -> Result<()> {
     };
 
     let reranker = CrossEncoderReranker::new(config).unwrap();
-    let ranked_docs = reranker.rerank(query, docs, 5).await?;
+    let ranked_docs = reranker.rerank(query, docs, None, false).await?;
     println!("ranked_docs: {:?}", ranked_docs);
 
     Ok(())

@@ -61,7 +61,7 @@ async fn main() {
                 let start_time = Instant::now();
 
                 let res = reranker
-                    .rerank(&query, doc_refs, 1)
+                    .rerank(&query, doc_refs, Some(1), false)
                     .await
                     .expect("Rerank failed");
 

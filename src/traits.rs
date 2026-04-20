@@ -9,7 +9,8 @@ pub trait Reranker {
         &self,
         query: &str,
         docs: Vec<&str>,
-        top_n: usize,
+        top_n: Option<usize>,
+        normalize_scores: bool,
     ) -> Result<Vec<RankedDocument>, RerankerError>;
 }
 /// Struct to hold the ranked documents

@@ -9,7 +9,10 @@ async fn test_top_n() {
     .unwrap();
 
     let docs = vec!["doc one", "doc two", "doc three", "doc four", "doc five"];
-    let results = reranker.rerank("query", docs, 3).await.unwrap();
+    let results = reranker
+        .rerank("query", docs, Some(3), false)
+        .await
+        .unwrap();
 
     assert_eq!(results.len(), 3);
 }

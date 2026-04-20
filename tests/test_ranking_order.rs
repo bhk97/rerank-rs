@@ -15,7 +15,7 @@ async fn test_ranking_order() {
         "France is a country in Western Europe", // tangentially related
     ];
 
-    let results = reranker.rerank(query, docs, 3).await.unwrap();
+    let results = reranker.rerank(query, docs, Some(3), false).await.unwrap();
     assert_eq!(results[0].index, 0);
     assert!(results[0].score > results[1].score);
     assert!(results[1].score > results[2].score);

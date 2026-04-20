@@ -12,7 +12,7 @@ async fn test_long_document_handling() {
     let long_doc = "rust programming".repeat(200);
     let docs = vec![long_doc.as_str(), "short doc"];
 
-    let results = reranker.rerank(query, docs, 2).await.unwrap();
+    let results = reranker.rerank(query, docs, Some(2), false).await.unwrap();
     // must return results without panic
     assert_eq!(results.len(), 2);
     // scores must be valid floats
